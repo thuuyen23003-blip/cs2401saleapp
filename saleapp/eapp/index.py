@@ -1,28 +1,55 @@
-from flask import render_template, request
-
-from saleapp.eapp import app, dao
+import math
+from flask import render_template, request, redirect
+from eapp import app, dao, Login
+from flask_login import login_user
 
 @app.route('/')
 def index():
-    categories = dao.load_categories()
-    products = dao.load_products(request.args.get("kw"), cate_id=request.args.get("category_id"))
+    products = dao.load_products(request.args.get("kw"),
+                                 cate_id=request.args.get("category_id"),
+                                 page=int(request.args.get("page", 1)))
 
     # kw =
     # if kw:
     #     products = [p for p in products if p['name'].find(kw) >= 0]
 
-    return render_template('index.html',
-                           categories=categories, products=products)
+    page_size = app.config["PAGE_SIZE"]
+
+    return render_template('index.html', products=products,
+                           pages=math.ceil(dao.count_products()/page_size))
 
 @app.route('/login')
 def login_view():
     return render_template('login.html')
 
+@app.route('/login', methods=['post'])
+def login_process():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    u = dao.authenticate(username=username, password=password)
+    if u:
+        login_user(user=u)
+
+        return redirect('/admin')
+
+    return render_template('admin/index.html', err_msg='Login thất bại do sai user hoặc password!')
+
 @app.route('/register')
 def register_view():
     return render_template('register.html')
 
+@app.context_processor
+def count_responses():
+    return {
+        'categories' : dao.load_categories()
+    }
+
+@Login.user_loader
+def get_user(user_id):
+    return dao.get_user_by_id(user_id)
+
 if __name__ == '__main__':
     with app.app_context():
-        from saleapp.eapp import admin
+        from eapp import admin
         app.run(debug=True)
