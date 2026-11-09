@@ -1,8 +1,9 @@
 import math
 from flask import render_template, request, redirect, session
+from sqlalchemy.util import methods_equivalent
 
 from eapp import app, dao, Login, utils
-from flask_login import login_user, logout_user
+from flask_login import login_user, logout_user, login_required
 
 @app.route('/')
 def index():
@@ -31,6 +32,10 @@ def login_process():
     u = dao.authenticate(username=username, password=password)
     if u:
         login_user(user=u)
+
+    next = request.args.get('next')
+    if next:
+        return redirect(next)
 
     return redirect('/') if request.args.get('from') else redirect('/admin')
 
@@ -63,6 +68,10 @@ def register_process():
 
     return render_template('register.html', err_msg=err_msg)
 
+@app.route('/cart')
+def cart():
+    return render_template('cart.html')
+
 @app.route('/api/carts', methods=['post'])
 def add_to_cart():
     cart = session.get('cart')
@@ -84,10 +93,35 @@ def add_to_cart():
 
     return utils.count_cart(cart)
 
+@app.route('/api/carts/<product_id>', methods=['patch'])
+def update_cart(product_id):
+    cart = session.get('cart')
+    if cart and product_id in cart:
+        cart[product_id]['quantity'] = int(request.json.get('quantity', cart[product_id]['quantity']))
+
+    session['cart'] = cart
+    return utils.count_cart(cart)
+
+
+@app.route('/api/carts/<product_id>', methods=['delete'])
+def delete_cart(product_id):
+    cart = session.get('cart')
+    if cart and product_id in cart:
+        del cart[product_id]
+
+    session['cart'] = cart
+    return utils.count_cart(cart)
+
+@app.route('/api/pay', methods=['post'])
+@login_required
+def pay():
+    pass
+
 @app.context_processor
-def count_responses():
+def common_responses():
     return {
-        'categories' : dao.load_categories()
+        'categories' : dao.load_categories(),
+        'carts' : utils.count_cart(session.get('cart'))
     }
 
 @Login.user_loader

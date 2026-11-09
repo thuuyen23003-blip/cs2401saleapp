@@ -1,9 +1,8 @@
-from tkinter.font import names
-
-from eapp.models import Category, Product, User
+from eapp.models import Category, Product, User, Receipt, ReceiptDetails
 from eapp import app, db
 import hashlib
 import cloudinary.uploader
+from flask_login import current_user
 
 def load_categories():
     return Category.query.all()
@@ -47,3 +46,14 @@ def create_user(name,username,password, avatar = None):
 
     db.session.add(u)
     db.session.commit()
+
+def add_receipt(cart):
+    if cart:
+        r = Receipt(user=current_user)
+        db.session.add(r)
+
+        for c in cart.values():
+            d = ReceiptDetails(quantity=c['quantity'], price=c['price'], receipt=r, product_id=c['id'])
+            db.session.add(d)
+
+        db.session.commit()
