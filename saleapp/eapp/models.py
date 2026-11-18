@@ -54,12 +54,12 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
-        # import hashlib
-        # u = User(name='Thu Uyen', username='admin',
-        #          password=hashlib.md5('123456'.encode('utf-8')).hexdigest(),
-        #          user_role=UserRoleEnum.ADMIN)
-        # db.session.add(u)
-        # db.session.commit()
+        import hashlib
+        u = User(name='Thu Uyen', username='admin',
+                 password=hashlib.md5('123456'.encode('utf-8')).hexdigest(),
+                 user_role=UserRoleEnum.ADMIN)
+        db.session.add(u)
+        db.session.commit()
 
         # c1 = Category(name='Mobile')
         # c2 = Category(name='Tablet')

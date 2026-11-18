@@ -3,6 +3,7 @@ from eapp import app, db
 import hashlib
 import cloudinary.uploader
 from flask_login import current_user
+from sqlalchemy import func
 
 def load_categories():
     return Category.query.all()
@@ -57,3 +58,16 @@ def add_receipt(cart):
             db.session.add(d)
 
         db.session.commit()
+
+def count_products_by_cate():
+    return (db.session.query(Category.id, Category.name, func.count(Product.id))
+            .join(Product, Product.category_id == Category.id, isouter=True).group_by(Category.id).all())
+
+def stats_revenue_by_products():
+    query = (db.session.query(Product.id, Product.name, func.sum(ReceiptDetails.price * ReceiptDetails.quantity).
+                              label('revenue')).join(ReceiptDetails, ReceiptDetails.product_id == Product.id).
+                            group_by(Product.id).order_by('revenue'))
+
+if __name__ == '__main__':
+    with app.app_context():
+        print(count_products_by_cate())
